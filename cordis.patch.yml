@@ -1,0 +1,23 @@
+# dsh-agentbox — bundle patch
+#
+# Mounts this plugin into the profile's tree. `config` is handed to the client
+# half's apply(ctx, config), so every fix below is an on/off toggle rather than
+# an edit buried in someone else's node_modules.
+#
+# WHY THIS EXISTS
+#   The shell has exactly ONE media query in its entire stylesheet
+#   (prefers-reduced-motion) and no responsive breakpoints, so a 375px phone
+#   gets the desktop layout with no reflow. Rather than fork DSH or patch
+#   node_modules — both of which lose the fix on the next update — the
+#   overrides live here, scoped to narrow viewports, in version control.
+- insert:
+    - id: dsh-agentbox
+      name: dsh-agentbox
+      config:
+        # ---- toggles -----------------------------------------------------
+        # Every feature defaults to true. Set any to false to disable it
+        # without uninstalling the plugin.
+        mobileCss: true          # the responsive fixes below (<=640px only)
+        usageDockCompact: true   # keep the usage indicator to one line
+        usageDockTerse: true     # icon-only + 'in:/out:', drop noisy metrics
+        enterNewline: true       # Enter breaks the line; the send button sends
