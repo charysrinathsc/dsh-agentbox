@@ -798,3 +798,45 @@ untouched.
 
 **Lesson: never rely on auto-placement in a container whose flow you alter.**
 Taking one item out of flow silently re-assigns every auto-placed sibling.
+
+## Stable selectors: what is proven, and what is not
+
+`docs/DSH-STABLE-SELECTORS.md` records the shell's `data-*` API. The plugin now
+prefers it, keeping the hashed class as a fallback alternative in each selector.
+
+**Verified by element identity** (stable selector resolves to exactly the same
+element as the hashed one):
+
+| Stable hook | Replaces |
+|---|---|
+| `[data-sidebar-collapsed]` | `[class*="_frame"]` |
+| `[data-sidebar-collapsed] > *:has([data-slot="sidebar"])` | `[class*="sidebarCol"]` |
+| `[data-sidebar-collapsed] > *:has([data-slot="main"])` | `[class*="centerCol"]` |
+| `[data-rightbar-col]` | `[class*="rightbarCol"]` |
+| `[data-conversation-scroll]` | `[class*="scrollBody"]` |
+| `[data-composer-seat]` | `[class*="composerStack"]` |
+
+**Verified by behaviour**: with those hashed alternatives removed, the suite
+passes **14/16** — so the hooks genuinely carry their rules, they are not
+cosmetic. The two failures are both in the drawer rule
+(`html.dsh-agentbox-drawer ...`), where the strip script mis-targeted an
+alternative; that rule still needs its fallback until it is cleaned up.
+
+### Two traps, both mine, both caught by the suite
+
+**1. Cascading replacement.** Rewriting selector substrings one rule at a time
+let later rules re-match text earlier ones had just inserted, nesting `:has()`
+into nonsense. Fixed by doing it in **one regex pass** so no replacement is ever
+reprocessed.
+
+**2. The state attribute is not the styling target.** `data-sidebar-collapsed`
+lives on the **frame**, but the rail-collapse rule styles the **column**. Adding
+`[data-sidebar-collapsed="true"]` to that rule made the rule match the frame and
+set `width: 0; min-width: 0; max-width: 0` **on the whole app** — the frame
+collapsed to 0px wide, the grid tracks went `0px 0px 0px`, and the chat vanished.
+The suite caught it instantly (`tracks "0px 0px 0px"`, `content 0px of 402px`).
+The column must be addressed structurally:
+`[data-sidebar-collapsed] > *:has([data-slot="sidebar"])`.
+
+**A state attribute marks WHERE the state lives. It says nothing about what you
+intend to style.**
